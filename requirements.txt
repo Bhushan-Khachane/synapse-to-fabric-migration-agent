@@ -1,0 +1,14 @@
+# Core dependencies for orchestration scripts
+jsonschema>=4.21.0
+click>=8.1.7
+rich>=13.7.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Azure SDK (for Fabric deployment)
+azure-identity>=1.15.0
+azure-mgmt-synapse>=2.0.0
+
+# Development
+pytest>=8.0.0
+pytest-cov>=4.1.0
