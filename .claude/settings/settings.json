@@ -1,0 +1,102 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git stash*)",
+      "Bash(python migration/orchestration/*)",
+      "Bash(python3 migration/orchestration/*)",
+      "Bash(dotnet build*)",
+      "Bash(az fabric*)",
+      "Bash(az rest*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git branch -D*)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(az login*)",
+      "Bash(az account set*)",
+      "Bash(az keyvault secret show*)",
+      "Bash(az keyvault secret download*)",
+      "Bash(sqlcmd * -P *)",
+      "Read(./.env)",
+      "Read(**/.env)",
+      "Read(**/secrets/**)",
+      "Read(**/credentials/**)",
+      "Read(**/*.key)",
+      "Read(**/*.pfx)",
+      "Read(**/*.pem)",
+      "Edit(synapse/**)",
+      "Write(synapse/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/bash_guard.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/kill_switch.py",
+            "timeout": 2
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/secret_scanner.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/kill_switch.py",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/audit_logger.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/session_start.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "defaultMode": "default"
+}
