@@ -1,54 +1,62 @@
 # CLAUDE.md — Synapse → Fabric Migration Agent
 
-> This file is loaded at the start of every Claude Code session. Keep it concise.
+## Project Overview
+This repository contains a multi-agent system for migrating Azure Synapse Analytics workspaces
+to Microsoft Fabric. It uses Claude Code's orchestrator-worker pattern with human approval gates.
 
-## Project Purpose
-Migrate Azure Synapse Analytics workspaces to Microsoft Fabric using a multi-agent system.
-- Source: `synapse/` (READ-ONLY — never modify)
-- Target: `fabric/` (written by agents)
-- Artifacts: pipelines, SQL objects, notebooks, semantic models
+- **Source:** Azure Synapse Analytics (dedicated SQL pools, Spark notebooks, pipelines, linked services)
+- **Target:** Microsoft Fabric (Warehouse, Lakehouse, Data Factory pipelines, semantic models)
+- **Architecture:** migration-orchestrator (Opus) dispatches 7 Sonnet subagents, each outputting typed JSON
 
-## Agent System
-8-agent orchestrator-worker system:
-- **migration-orchestrator** (Opus): lead agent — dispatches, validates JSON output against schemas, pauses at human gates
-- **pipeline-assessor**: Phase 1 — read-only assessment
-- **tsql-converter**: Phase 2 — SQL conversion (worktree isolation)
-- **pipeline-converter**: Phase 3 — pipeline JSON conversion (worktree isolation)
-- **fabric-deployer**: Phase 4 — deployment to Fabric DEV workspace
-- **data-validator**: Phase 5 — row count and schema parity check
-- **report-migrator**: Phase 6 — semantic model and Power BI report migration (worktree isolation)
-- **security-auditor**: Phase 7 — pre-commit secret scan (read-only, no Write)
+## Architecture Quick Reference
+- Orchestrator: `.claude/agents/migration-orchestrator.md` (Opus, dispatches all)
+- Subagents: `.claude/agents/*.md` (Sonnet, scoped tools, some with worktree isolation)
+- Hooks: `.claude/hooks/*.py` (mechanical enforcement, cannot be bypassed)
+- Schemas: `.claude/schemas/*.schema.json` (typed handoff contracts between agents)
+- Rules: `.claude/rules/*.md` (stable migration conversion rules)
+- State: `migration/state/migration_state.json` (resumable)
+- Audit: `migration/audit/audit_trail.jsonl` (immutable, append-only)
 
-## Typed Handoff Protocol
-Every agent writes output to `migration/state/phaseN_<name>.json`.
-Orchestrator validates each output against schemas in `.claude/schemas/` before proceeding.
-data-validator reads phase2_convert_sql.json for `tables_referenced` and `validation_queries`.
+## Migration Phases
+1. **Assess** → `pipeline-assessor` (read-only, Sonnet)
+2. **Convert SQL** → `tsql-converter` (worktree isolation, Sonnet)
+3. **Convert Pipelines** → `pipeline-converter` (worktree isolation, Sonnet)
+4. **Deploy** → `fabric-deployer` (Bash, DEV workspace only, Sonnet)
+5. **Validate Data** → `data-validator` (read-only DB queries, Sonnet)
+6. **Convert Reports** → `report-migrator` (worktree isolation, Sonnet)
+7. **Final Review** → `security-auditor` (read-only, no Write permission, Sonnet)
 
-## Security Rules — NON-NEGOTIABLE
-- NEVER paste production data, query results, or sample rows into prompts
-- NEVER include credentials, connection strings, or secrets in any file
-- `synapse/` is READ-ONLY — bash_guard and settings.json both enforce this
+## Security Rules — READ BEFORE EVERY SESSION
+- **NEVER** paste production data, query results, or sample rows into prompts
+- **NEVER** include credentials, connection strings, or secrets in any file
+- `synapse/` directory is **READ-ONLY** — never modify source artifacts
+- All subagent outputs must conform to schemas in `.claude/schemas/`
+- Hooks enforce security mechanically — bypassing them requires removing hook config
 - Kill switch: `touch .claude/KILL_SWITCH` halts all agents immediately
-- Hooks run mechanically — they cannot be bypassed
-
-## Cost Management
-Per-phase budgets (tokens): Assess 50K | SQL 200K | Pipelines 150K | Deploy 75K | Validate 100K | Reports 125K | Security 50K
-Total per segment: 750K tokens
+- Kill switch reset: `rm .claude/KILL_SWITCH`
 
 ## Common Commands
-- `/migrate-segment <name>` — Launch full 7-phase migration
-- `/convert-sql <file>` — Convert one SQL object
-- `/batch-convert <dir>` — Batch convert a directory
-- `/assess-pipeline <file>` — Assess one pipeline
-- `/validate-migration <dir>` — Validate converted artifacts
+- `/migrate-segment <segment-name>` — Launch full migration for a segment
+- `/convert-sql <path/to/file.sql>` — Convert a single SQL object
+- `/batch-convert <directory/>` — Batch convert a directory of SQL files
+- `/assess-pipeline <path/to/pipeline.json>` — Assess a single pipeline
+- `/validate-migration <directory/>` — Validate converted artifacts
 
-## Key File Locations
-- State file: `migration/state/migration_state.json`
-- Audit trail: `migration/audit/audit_trail.jsonl`
-- Architecture differences: `docs/architecture-differences.md`
-- Deployment config: `migration/config/deploy_config.json`
+## Cost Management
+- Per-phase token budgets enforced by orchestrator (see orchestrator agent)
+- Total budget per segment: 750,000 tokens
+- If exceeded: orchestrator triggers kill switch and pauses for human intervention
+- Orchestrator (Opus) is used ONLY for planning + synthesis — keeps cost lean
+- All heavy work delegated to Sonnet subagents
 
 ## Coding Conventions
-- SQL: PascalCase, schema-qualified names, one object per file
-- JSON: 2-space indentation
-- Python: PEP 8, type hints, docstrings
+- SQL files: PascalCase naming, schema-qualified object names (e.g., `dbo.SalesOrders`)
+- One SQL object per file (one stored proc per `.sql` file)
+- Pipeline JSON: 2-space indentation
+- Header comment on every converted file:
+  ```sql
+  -- Object: dbo.sp_SalesReport
+  -- Migrated from: Synapse dedicated pool
+  -- Migration status: converted | needs_review | blocked
+  -- Migration date: YYYY-MM-DD
+  ```

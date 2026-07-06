@@ -1,51 +1,44 @@
-# Contributing to Synapse → Fabric Migration Agent
+# Contributing
 
-Thank you for contributing! This guide explains how to add new migration rules, fix bugs, and submit PRs.
+Thank you for considering contributing to the Synapse → Fabric Migration Agent.
 
-## Areas Most Needing Contributions
+## How to Contribute
 
-1. **T-SQL conversion rules** — new Synapse → Fabric incompatibilities in `.claude/rules/synapse-to-fabric-tsql.md`
-2. **Pipeline activity mappings** — new activity types in `.claude/rules/pipeline-migration.md`
-3. **Architecture differences** — newly discovered differences in `docs/architecture-differences.md`
-4. **Eval pairs** — add known-good source/target pairs in `migration/evals/`
-5. **Hook improvements** — new secret patterns in `.claude/hooks/secret_scanner.py`
+### Reporting Issues
+- Use GitHub Issues
+- Include your Claude Code version (`claude --version`)
+- Describe the phase that failed
+- Attach the relevant `migration/state/phaseN_*.json` file (redact any credentials)
 
-## How to Submit a PR
+### Adding Architecture Differences
+The most valuable contribution is adding to `docs/architecture-differences.md` — Synapse vs Fabric quirks discovered during real migrations.
 
-1. Fork the repo
-2. Create a feature branch: `git checkout -b feat/new-tsql-rule`
-3. Make your changes
-4. Test against the eval suite: `python migration/orchestration/run_evals.py`
-5. Submit a PR with a clear description of what was changed and why
-
-## Adding a New T-SQL Conversion Rule
-
-Edit `.claude/rules/synapse-to-fabric-tsql.md`:
-
+Format:
 ```markdown
-### [Rule Name]
-- **Synapse**: `<synapse pattern>`
-- **Fabric**: `<fabric equivalent>`
-- **Notes**: Any caveats or manual steps
-- **Example**:
-  ```sql
-  -- Synapse
-  <example synapse code>
-  
-  -- Fabric
-  <example fabric code>
-  ```
+### [Category]
+- **Source (Synapse):** description
+- **Target (Fabric):** description  
+- **Migration approach:** what to do
+- **Discovered on:** YYYY-MM-DD
 ```
 
-## Adding an Eval Pair
+### Adding Migration Rules
+Rules in `.claude/rules/` are used by subagents for conversion decisions. Add a rule if you find a conversion pattern that isn't already covered.
 
-1. Create a directory: `migration/evals/<segment-name>/`
-2. Add source artifacts in `migration/evals/<segment-name>/synapse/`
-3. Add hand-verified expected output in `migration/evals/<segment-name>/expected-fabric/`
-4. Add `migration/evals/<segment-name>/README.md` explaining what is tested
+### Pull Request Process
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feat/your-feature`
+3. Make your changes
+4. Test against the eval segment: `python migration/orchestration/migrate_segment.py --dry-run --segment evals/test-segment-sales`
+5. Submit a PR with a clear description of what changed and why
 
 ## Code Style
+- Python: PEP 8
+- JSON schemas: JSON Schema Draft 2020-12
+- Agent markdown: follow existing frontmatter format
+- Commit messages: `type: short description` (init/feat/fix/docs/refactor)
 
-- Python: PEP 8, type hints on all functions
-- SQL: PascalCase object names, schema-qualified, one object per file
-- Markdown: ATX headers, 80-char line limit where possible
+## Security
+- Never commit credentials, connection strings, or sample data
+- Never commit the `synapse/` or `fabric/` directories
+- If you find a security issue, open a private GitHub Security Advisory
