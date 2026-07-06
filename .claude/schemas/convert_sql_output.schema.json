@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConvertSQLOutput",
+  "description": "Schema for tsql-converter Phase 2 output. data-validator reads tables_referenced and validation_queries from this file — the typed handoff that eliminates re-discovery.",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "converted_objects", "blockers"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "const": "tsql-converter" },
+    "segment": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "converted_objects": {
+      "type": "array",
+      "description": "One entry per SQL object converted",
+      "items": {
+        "type": "object",
+        "required": ["source_path", "target_path", "status", "tables_referenced"],
+        "properties": {
+          "source_path": { "type": "string", "description": "e.g. synapse/sql/stored-procedures/sp_SalesReport.sql" },
+          "target_path": { "type": "string", "description": "e.g. fabric/warehouse/stored-procedures/sp_SalesReport.sql" },
+          "object_name": { "type": "string" },
+          "object_type": { "enum": ["stored_procedure", "view", "function", "table", "index"] },
+          "status": { "enum": ["converted", "needs_review", "blocked"] },
+          "caveats": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Human-readable notes about conversion decisions"
+          },
+          "tables_referenced": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Fully qualified table names e.g. dbo.SalesOrders — consumed by data-validator"
+          },
+          "validation_queries": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Row count / checksum queries — consumed by data-validator in Phase 5"
+          },
+          "changes_made": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Specific transformations applied e.g. IDENTITY replaced with SEQUENCE"
+          },
+          "source_sha256": { "type": "string", "description": "SHA256 of source file before conversion" },
+          "target_sha256": { "type": "string", "description": "SHA256 of converted file" }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Objects that could not be converted — require manual migration"
+    },
+    "arch_diffs_discovered": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "converted": { "type": "integer" },
+        "needs_review": { "type": "integer" },
+        "blocked": { "type": "integer" },
+        "total_tables_referenced": { "type": "integer" }
+      }
+    }
+  }
+}

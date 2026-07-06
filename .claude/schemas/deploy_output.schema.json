@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DeployOutput",
+  "description": "Schema for fabric-deployer Phase 4 output.",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "deployed_artifacts", "overall_status"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "const": "fabric-deployer" },
+    "segment": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "workspace": { "type": "string", "description": "Target Fabric workspace name (always DEV for first deployment)" },
+    "deployed_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_type", "name", "status"],
+        "properties": {
+          "artifact_type": { "enum": ["connection", "sql_script", "notebook", "pipeline", "semantic_model", "lakehouse"] },
+          "name": { "type": "string" },
+          "status": { "enum": ["deployed", "updated", "failed", "skipped"] },
+          "fabric_item_id": { "type": "string", "description": "Fabric item GUID after deployment" },
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "overall_status": { "enum": ["success", "partial", "failed"] },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "deployed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "skipped": { "type": "integer" }
+      }
+    }
+  }
+}

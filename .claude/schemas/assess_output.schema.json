@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AssessmentOutput",
+  "description": "Schema for pipeline-assessor Phase 1 output. Orchestrator validates this before proceeding to Phase 2.",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "pipelines_assessed", "blockers", "arch_diffs_discovered"],
+  "properties": {
+    "schema_version": { "const": "1.0", "description": "Schema version for forward compatibility" },
+    "agent": { "const": "pipeline-assessor" },
+    "segment": { "type": "string", "description": "Migration segment name e.g. sales-data-etl-reports" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "pipelines_assessed": {
+      "type": "array",
+      "description": "One entry per Synapse pipeline assessed",
+      "items": {
+        "type": "object",
+        "required": ["pipeline_name", "source_path", "activities", "status"],
+        "properties": {
+          "pipeline_name": { "type": "string" },
+          "source_path": { "type": "string", "description": "Relative path under synapse/pipelines/" },
+          "status": { "enum": ["ready", "needs_review", "unsupported", "blocked"] },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "synapse_type", "fabric_equivalent", "status"],
+              "properties": {
+                "name": { "type": "string" },
+                "synapse_type": { "type": "string", "description": "e.g. Copy, ExecuteDataFlow, SqlServerStoredProcedure" },
+                "fabric_equivalent": { "type": "string", "description": "e.g. Copy, Notebook, StoredProcedure" },
+                "status": { "enum": ["ready", "needs_review", "unsupported"] },
+                "notes": { "type": "string" }
+              }
+            }
+          },
+          "linked_services_needed": { "type": "array", "items": { "type": "string" } },
+          "dependencies": { "type": "array", "items": { "type": "string" }, "description": "Pipelines this one depends on" },
+          "trigger_type": { "type": "string", "description": "e.g. ScheduleTrigger, TumblingWindowTrigger" },
+          "estimated_complexity": { "enum": ["low", "medium", "high"] }
+        }
+      }
+    },
+    "sql_objects_found": {
+      "type": "array",
+      "description": "SQL objects discovered during assessment",
+      "items": {
+        "type": "object",
+        "required": ["object_name", "object_type", "source_path", "status"],
+        "properties": {
+          "object_name": { "type": "string" },
+          "object_type": { "enum": ["stored_procedure", "view", "function", "table", "index"] },
+          "source_path": { "type": "string" },
+          "status": { "enum": ["ready", "needs_review", "unsupported", "blocked"] },
+          "compatibility_issues": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hard blockers that prevent migration without manual intervention"
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Non-blocking issues that need attention"
+    },
+    "arch_diffs_discovered": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Architectural differences found — appended to docs/architecture-differences.md"
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_pipelines": { "type": "integer" },
+        "ready": { "type": "integer" },
+        "needs_review": { "type": "integer" },
+        "blocked": { "type": "integer" },
+        "total_sql_objects": { "type": "integer" },
+        "estimated_effort_days": { "type": "number" }
+      }
+    }
+  }
+}

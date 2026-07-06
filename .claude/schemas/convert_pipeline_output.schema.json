@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConvertPipelineOutput",
+  "description": "Schema for pipeline-converter Phase 3 output.",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "converted_pipelines", "blockers"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "const": "pipeline-converter" },
+    "segment": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "converted_pipelines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_path", "target_path", "status", "activities"],
+        "properties": {
+          "source_path": { "type": "string" },
+          "target_path": { "type": "string" },
+          "pipeline_name": { "type": "string" },
+          "status": { "enum": ["converted", "needs_review", "blocked"] },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "synapse_type", "fabric_type", "status"],
+              "properties": {
+                "name": { "type": "string" },
+                "synapse_type": { "type": "string" },
+                "fabric_type": { "type": "string" },
+                "status": { "enum": ["converted", "needs_manual_rewrite", "blocked"] },
+                "notes": { "type": "string" }
+              }
+            }
+          },
+          "connections_needed": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Fabric connections that must be created in workspace before deployment"
+          },
+          "triggers_migrated": { "type": "boolean", "description": "All triggers set to DISABLED" },
+          "parameters_preserved": { "type": "boolean" },
+          "variables_preserved": { "type": "boolean" }
+        }
+      }
+    },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "arch_diffs_discovered": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "converted": { "type": "integer" },
+        "needs_review": { "type": "integer" },
+        "needs_manual_rewrite": { "type": "integer" },
+        "blocked": { "type": "integer" }
+      }
+    }
+  }
+}

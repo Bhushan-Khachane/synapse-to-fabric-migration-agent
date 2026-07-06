@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DataValidationOutput",
+  "description": "Schema for data-validator Phase 5 output. Input comes from phase2_convert_sql.json (typed handoff).",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "validation_results", "overall_status"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "const": "data-validator" },
+    "segment": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "source_input": {
+      "type": "string",
+      "description": "Path to phase2 JSON that was used as input — confirms typed handoff"
+    },
+    "validation_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["table_name", "source_count", "target_count", "row_count_match", "schema_match"],
+        "properties": {
+          "table_name": { "type": "string" },
+          "source_count": { "type": "integer" },
+          "target_count": { "type": "integer" },
+          "row_count_match": { "type": "boolean" },
+          "schema_match": { "type": "boolean" },
+          "checksum_match": { "type": "boolean" },
+          "schema_differences": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "e.g. Column type mismatch: dbo.Orders.Amount DECIMAL(18,2) vs FLOAT"
+          },
+          "severity": { "enum": ["critical", "warning", "info"] },
+          "validation_query_used": { "type": "string" }
+        }
+      }
+    },
+    "overall_status": { "enum": ["pass", "fail", "partial"] },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_tables": { "type": "integer" },
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "critical_mismatches": { "type": "integer" },
+        "warnings": { "type": "integer" }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SecurityAuditOutput",
+  "description": "Schema for security-auditor Phase 7 output.",
+  "type": "object",
+  "required": ["schema_version", "agent", "segment", "timestamp", "findings", "overall_status"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "const": "security-auditor" },
+    "segment": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file_path", "line_number", "pattern", "severity"],
+        "properties": {
+          "file_path": { "type": "string" },
+          "line_number": { "type": "integer" },
+          "pattern": { "type": "string", "description": "Pattern name that matched e.g. 'Hardcoded password'" },
+          "severity": { "enum": ["critical", "high", "medium", "low"] },
+          "redacted_value": { "type": "string", "description": "Always [REDACTED] — never log actual secret value" },
+          "recommendation": { "type": "string" }
+        }
+      }
+    },
+    "overall_status": { "enum": ["clean", "warnings_only", "critical_found"] },
+    "commit_recommendation": { "enum": ["safe_to_commit", "review_required", "do_not_commit"] },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_files_scanned": { "type": "integer" },
+        "critical": { "type": "integer" },
+        "high": { "type": "integer" },
+        "medium": { "type": "integer" },
+        "low": { "type": "integer" }
+      }
+    }
+  }
+}
